@@ -17,7 +17,7 @@ title: Commission Organizer
 email: makyo+commorg@drab-makyo.com
 description: >- # this means to ignore newlines until "baseurl:"
   commission-organizer is a python script for organizing art via naming convention.
-repository: https://github.com/makyo/commission-organizer
+repository: makyo/commission-organizer
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: git_clone_makyo
