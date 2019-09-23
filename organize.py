@@ -84,22 +84,6 @@ def log(level, message, done=False):
             '  ' * level,
             message))
 
-def create_by_index(link_dir, link_type, parts):
-    '''Create the base index file for a type (artist, character, etc).'''
-    log(2, 'Generating index page for {}s'.format(link_type))
-    content = TABLE_STR.format(
-        part_type=link_type.capitalize(),
-        rows=''.join([TABLE_ROW_STR.format(
-            part=k,
-            count=len(parts[k]),
-            s='s' if len(parts[k]) != 1 else '') for k in
-            sorted(parts.keys())]))
-    with open(os.path.join(link_dir, 'index.html'), 'w') as f:
-        if COMMIT:
-            f.write(TEMPLATE.substitute(
-                title=link_type.capitalize(),
-                content=content))
-
 def get_file_list(include_date=False, include_rating=True):
     '''Get a list of files matching the naming convention.'''
     log(1, 'Getting list of commissions...')
@@ -110,6 +94,22 @@ def get_file_list(include_date=False, include_rating=True):
     ))
     log(1, 'Found {} matching files'.format(len(result)), done=True)
     return result
+
+def create_by_index(link_dir, link_type, parts):
+    '''Create the base index file for a type (artist, character, etc).'''
+    log(2, 'Generating index page for {}s'.format(link_type))
+    content = TABLE_STR.format(
+        part_type=link_type.capitalize(),
+        rows=''.join([TABLE_ROW_STR.format(
+            part=k,
+            count=len(parts[k]),
+            s='s' if len(parts[k]) != 1 else '') for k in
+            sorted(parts.keys())]))
+    if COMMIT:
+        with open(os.path.join(link_dir, 'index.html'), 'w') as f:
+            f.write(TEMPLATE.substitute(
+                title=link_type.capitalize(),
+                content=content))
 
 def create_by_dir(by_dir, by_type, by, parts):
     '''Create a part directory (artist, character, etc) with index and links.'''
@@ -134,9 +134,9 @@ def create_by_dir(by_dir, by_type, by, parts):
         img=os.path.basename(part['path']),
         rating=part.get('rating'),
         title=part['title']) for part in parts])
-    with open(os.path.join(by_dir, by, 'index.html'), 'w') as f:
-        log(3, 'Generating the index page for {} {}'.format(by_type, by))
-        if COMMIT:
+    log(3, 'Generating the index page for {} {}'.format(by_type, by))
+    if COMMIT:
+        with open(os.path.join(by_dir, by, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
                 title='{}: {}'.format(by_type.capitalize(), by),
                 content=content))
@@ -206,15 +206,18 @@ def main(include_date=False, include_rating=True):
         img=path.group(1),
         rating=path.group('rating'),
         title=path.group('title')) for path in map(lambda x: FILENAME_RE.match(x.path), recent[:10])])
-    with open(os.path.join(CWD, 'index.html'), 'w') as f:
-        if COMMIT:
+    if COMMIT:
+        with open(os.path.join(CWD, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
                 title='Commissions',
                 content=content))
 
     duration = datetime.now() - start
     log(0,
-        'Done in {}.{} seconds'.format(duration.seconds, duration.microseconds),
+        '{} in {}.{} seconds'.format(
+            'Completed' if COMMIT else 'Dry-run completed',
+            duration.seconds,
+            duration.microseconds),
         done=True)
 
 if __name__ == '__main__':
@@ -234,6 +237,7 @@ if __name__ == '__main__':
                         'expected naming convention')
     parser.add_argument('-v',
                         default=0,
+                        dest='verbose',
                         action='count',
                         help='Run in verbose mode (-vv for more info, up to '
                         '-{})'.format('v' * MAX_VERBOSITY))
