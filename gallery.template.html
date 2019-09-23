@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>$title</title>
+        <link href="https://fonts.googleapis.com/css?family=Ubuntu&display=swap" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: "Ubuntu", sans-serif;
+            }
+            a.G, a.R, a.X {
+                display: inline-block;
+                border: 2px solid transparent;
+                overflow: hidden;
+            }
+            img {
+                max-height: 200px;
+                max-width: 100%;
+            }
+            a.X {
+                border: 2px solid red;
+            }
+            a.X img {
+                filter: blur(1rem);
+            }
+            a.R {
+                border: 2px solid orange;
+            }
+            a.R img {
+                filter: blur(0.5rem);
+            }
+            a.X img:hover, a.R img:hover {
+                filter: blur(0);
+            }
+            main {
+                max-width: 1024px;
+                border: 1px solid #ccc;
+                margin: 0 auto;
+                padding: 0.5rem;
+                overflow: none;
+                text-align: center;
+            }
+            .modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+            .modal .inner {
+                width: calc(100% - 2rem);
+                max-height: calc(100vh - 2rem);
+                max-width: 1024px;
+                position: relative;
+                overflow: scroll;
+                margin: 1rem auto;
+                padding: 0;
+                background-color: #fff;
+            }
+            .modal .meta {
+                padding: 1rem;
+                margin: 0 auto;
+            }
+            .show {
+                display: block !important;
+            }
+            .modal .img {
+                text-align: center;
+                width: 100%;
+            }
+            .modal .img img {
+                max-width: 100%;
+                max-height: 100vh;
+            }
+            dt {
+                font-weight: bold;
+            }
+            table {
+                margin: 0 auto;
+                min-width: 50%;
+            }
+            td {
+                padding: 5px;
+            }
+            tbody tr:nth-child(even) td {
+                background-color: #eee;
+            }
+            thead th {
+                border-bottom: 2px solid #888;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>$title</h1>
+            $content
+        </main>
+        <div class="modal">
+            <div class="inner">
+                <div class="meta"></div>
+                <div class="img"></div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            const root = window.location.pathname.replace(/\/by-.+$$/, '/');
+            const modal = document.querySelector('.modal');
+            const img = document.querySelector('.img');
+            const meta = document.querySelector('.meta');
+            let mustLoadHash = window.location.hash !== '';
+
+            function loadHash() {
+                if (!mustLoadHash) {
+                    mustLoadHash = true;
+                    return;
+                }
+                hash = window.location.hash.replace('#', '');
+                if (hash !== '') {
+                    document.querySelectorAll('.G, .R, .X').forEach(thumb => {
+                        if (thumb.attributes.href.textContent === hash) {
+                            thumb.click();
+                        }
+                    });
+                } else {
+                    hideModal();
+                }
+            }
+            function hideModal() {
+                modal.classList.remove('show');
+                window.location.hash = '';
+            }
+
+            document.body.addEventListener('keydown', evt => {
+                if (evt.key === 'Escape') {
+                    hideModal();
+                }
+            });
+            modal.addEventListener('click', evt => {
+                hideModal();
+            });
+            window.onhashchange = loadHash;
+
+            document.querySelectorAll('.G, .R, .X').forEach(thumb => {
+                thumb.addEventListener('click', evt => {
+                    const imgName = thumb.attributes.href.textContent;
+                    const parts = imgName.split('.')[0].split('--');
+                    const characters = parts[2].split('-').map(c => `<a href="$${root}by-character/$${c}">$${c}</a>`).join(', ');
+                    evt.preventDefault();
+                    modal.classList.add('show');
+                    mustLoadHash = true;
+                    window.location.hash = imgName;
+                    img.innerHTML = `<a href="$${thumb.attributes.href.textContent}" target="_blank">$${thumb.innerHTML}</a>`;
+                    meta.innerHTML = `<h2>$${parts[1].replace(/-/g, ' ')}</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Artist</th>
+                                    <th>Characters</th>
+                                    <th>Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><a href="$${root}by-artist/$${parts[0]}">$${parts[0]}</a></td>
+                                    <td>$${characters}</td>
+                                    <td>$${parts[3]}</td>
+                                </tr>
+                            </tbody>
+                        </table>`;
+                });
+            });
+
+            loadHash();
+        </script>
+    </body>
+</html>

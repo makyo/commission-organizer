@@ -1,11 +1,16 @@
 #!/bin/bash
 
+echo -e "\e[91mThis script has been deprecated in favor of the python version!"
+echo -e "\e[94mPlease see https://github.com/makyo/commission-organizer for details."
+
+exit 1
+
 STARTTIME=$(date +%s)
 read -r -d '' TEMPL_START<<'EOF'
 <!DOCTYPE html>
 <html>
     <head>
-        <link href="https://fonts.googleapis.com/css?family=Ubuntu&display=swap" rel="stylesheet" /> 
+        <link href="https://fonts.googleapis.com/css?family=Ubuntu&display=swap" rel="stylesheet" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body {
@@ -189,7 +194,7 @@ mkdir by-artist by-character by-rating
 cat <<EOF > index.html
 ${TEMPL_START}All commissions</h1>
 <p><strong>
-<a href="by-artist">By artist</a> | 
+<a href="by-artist">By artist</a> |
 <a href="by-character">By character</a> |
 <a href="by-rating">By rating</a> (<a href="by-rating/G">G</a> - <a href="by-rating/R">R</a> - <a href="by-rating/X">X</a>) |
 <a href="by-song">By song</a> |
@@ -231,7 +236,7 @@ for img in `ls -1t *--*--*--*`; do
     echo -e "    \e[34mAdding image to artist '${parts[0]}'\e[0m"
     # Write the link to the index file for the artist
     echo -e "<a href=\"$img\" class=\"${parts[3]}\"><img src=\"$img\" title=\"${parts[1]}\" alt=\"${parts[1]}\" /></a>\n" >> index.html
-    
+
     # Link the file
     ln -s ../../$img .
     popd > /dev/null 2>&1
@@ -272,7 +277,7 @@ for img in `ls -1t *--*--*--*`; do
     # Write the link to the index file for the rating
     echo -e "<a href=\"$img\" class=\"${parts[3]}\"><img src=\"$img\" title=\"${parts[1]}\" alt=\"${parts[1]}\" /></a>\n" >> index.html
     echo -e "\e[32mDone processing $img\e[0m"
-    
+
     # Link the file
     ln -s ../../$img .
     popd > /dev/null 2>&1
