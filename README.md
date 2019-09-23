@@ -3,18 +3,20 @@
 A ~~bash~~ Python script for organizing commissioned art via naming convention.
 
 ```
-usage: organize.py [-h] [--no-rating] [--date] [-v] [--dry-run]
+usage: organize.py [-h] [--no-rating] [--date] [--include-song] [-v]
+                   [--dry-run]
 
 Build a static site of commissioned art.
 
 optional arguments:
-  -h, --help   show this help message and exit
-  --no-rating  Don't include the rating in the naming convention
-  --date, -d   Include date in the format YYYY-MM-DD in expected naming
-               convention
-  -v           Run in verbose mode (-vv for more info, up to -vvvv)
-  --dry-run    Don't actually touch any files, just say what will happen
-               (verbosity automatically set to max)
+  -h, --help      show this help message and exit
+  --no-rating     Don't include the rating in the naming convention
+  --date, -d      Include date in the format YYYY-MM-DD in expected naming
+                  convention
+  --include-song  Include a "by song" link for song commissions
+  -v              Run in verbose mode (-vv for more info, up to -vvvv)
+  --dry-run       Don't actually touch any files, just say what will happen
+                  (verbosity automatically set to max)
 
 See https://github.com/makyo/commission-organizer for more details
 ```

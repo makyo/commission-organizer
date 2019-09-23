@@ -153,7 +153,7 @@ def create_by(link_type, parts):
     for k, v in parts.items():
         create_by_dir(link_dir, link_type, k, v)
 
-def main(include_date=False, include_rating=True):
+def main(include_date=False, include_rating=True, include_song=False):
     '''Build a static site for commissions.'''
     start = datetime.now()
     log(0, 'Building commissions site...')
@@ -200,12 +200,14 @@ def main(include_date=False, include_rating=True):
         <a href="by-artist">By artist</a> |
         <a href="by-character">By character</a> |
         <a href="by-rating">By rating</a> (<a href="by-rating/G">G</a> - <a href="by-rating/R">R</a> - <a href="by-rating/X">X</a>) |
-        <a href="by-song">By song</a> |
+        {}
         <a href="all.html">All images</a>
-    </strong></p>''' + ''.join([THUMB_STR.format(
-        img=path.group(1),
-        rating=path.group('rating'),
-        title=path.group('title')) for path in map(lambda x: FILENAME_RE.match(x.path), recent[:10])])
+    </strong></p>'''.format(
+            '<a href="by-song">By song</a> |' if include_song else '') + \
+        ''.join([THUMB_STR.format(
+            img=path.group(1),
+            rating=path.group('rating'),
+            title=path.group('title')) for path in map(lambda x: FILENAME_RE.match(x.path), recent[:10])])
     if COMMIT:
         with open(os.path.join(CWD, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
@@ -235,6 +237,10 @@ if __name__ == '__main__':
                         action='store_true',
                         help='Include date in the format YYYY-MM-DD in '
                         'expected naming convention')
+    parser.add_argument('--include-song',
+                        dest='include_song',
+                        action='store_true',
+                        help='Include a "by song" link for song commissions')
     parser.add_argument('-v',
                         default=0,
                         dest='verbose',
@@ -249,4 +255,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     COMMIT = not args.dry_run
     VERBOSITY = MAX_VERBOSITY if args.dry_run else args.verbose
-    main(include_date=args.include_date, include_rating=args.include_rating)
+    main(
+        include_date=args.include_date,
+        include_rating=args.include_rating,
+        include_song=args.include_song)
