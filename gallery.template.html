@@ -128,7 +128,18 @@
             }
             function hideModal() {
                 modal.classList.remove('show');
-                window.location.hash = '';
+                // There's an edge case here, where if you load the page with
+                // no hash, click an image, then click back, it adds an empty
+                // hash to the URL (e.g: example.com/#). The problem with this
+                // is that it adds to the history, so if you click back from
+                // there, it goes to the location without the hash, then adds
+                // the hash again, meaning you can't back out of the page
+                // after clicking an image.
+                //
+                // The web is a mess and computers were a mistake.
+                if (window.location.hash !== '') {
+                    window.location.hash = '';
+                }
             }
 
             document.body.addEventListener('keydown', evt => {
