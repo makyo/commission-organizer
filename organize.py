@@ -194,7 +194,7 @@ def main(include_date=False, include_rating=True):
         for entry in it:
             if entry.is_file() and FILENAME_RE.match(entry.path):
                 recent.append(entry)
-    recent.sort(key=lambda x: x.stat().st_mtime)
+    recent.sort(key=lambda x: x.stat().st_mtime, reverse=True)
     content = '''
     <p><strong>
         <a href="by-artist">By artist</a> |
