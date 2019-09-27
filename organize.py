@@ -1,6 +1,5 @@
 import os
 import re
-import glob
 import argparse
 from collections import defaultdict
 from shutil import rmtree
@@ -8,11 +7,6 @@ from string import Template
 from datetime import datetime
 
 CWD = os.getcwd()
-
-# Filename globs
-RATING = r'--?'
-DATE = r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]--'
-FILENAME_FORMAT = r'{}/{}*--*--*{}.???'
 
 # Regular expression for matching filenames
 FILENAME_RE = re.compile(
@@ -77,6 +71,7 @@ with open(os.path.join(
         'gallery.template.html')) as f:
     TEMPLATE = Template(f.read())
 
+
 def log(level, message, done=False):
     if level <= VERBOSITY:
         print('{}{}{}\x1b[0m'.format(
@@ -84,16 +79,30 @@ def log(level, message, done=False):
             '  ' * level,
             message))
 
+
 def get_file_list(include_date=False, include_rating=True):
     '''Get a list of files matching the naming convention.'''
     log(1, 'Getting list of commissions...')
-    result = glob.glob(FILENAME_FORMAT.format(
-        CWD,
-        DATE if include_date else '',
-        RATING if include_rating else '',
-    ))
+    result = []
+    with os.scandir(CWD) as it:
+        for entry in it:
+            if entry.is_file():
+                match = FILENAME_RE.match(entry.path)
+                if match and match.group('extension').lower() in \
+                        VALID_EXTENSIONS:
+                    f = {
+                        'entry': entry,
+                        'parts': match.groupdict(),
+                    }
+                    f['parts']['characters'] = \
+                        f['parts']['characters'].split('-')
+                    if 'rating' not in f['parts']:
+                        f['parts']['rating'] = 'G'
+                    result.append(f)
+    result.sort(key=lambda x: x['entry'].stat().st_mtime, reverse=True)
     log(1, 'Found {} matching files'.format(len(result)), done=True)
     return result
+
 
 def create_by_index(link_dir, link_type, parts):
     '''Create the base index file for a type (artist, character, etc).'''
@@ -111,29 +120,30 @@ def create_by_index(link_dir, link_type, parts):
                 title=link_type.capitalize(),
                 content=content))
 
+
 def create_by_dir(by_dir, by_type, by, parts):
-    '''Create a part directory (artist, character, etc) with index and links.'''
+    '''Create a part directory (artist, character, etc) with index and
+    links.'''
     log(2, 'Generating {} page for {}...'.format(by_type, by))
     if COMMIT:
         os.mkdir(os.path.join(by_dir, by))
     log(3, 'Linking files for {} {}...'.format(by_type, by))
-    parts.sort(key=lambda x: x['path'])
     for part in parts:
         log(4, 'Linking {} for the {} {} page'.format(
-            os.path.basename(part['path']), by, by_type))
+            part['entry'].name, by, by_type))
         if COMMIT:
             os.symlink(
                 os.path.join(
                     '..',
                     '..',
-                    os.path.basename(part['path'])),
+                    part['entry'].name),
                 os.path.join(
-                    by_dir, by, os.path.basename(part['path'])))
+                    by_dir, by, part['entry'].name))
     log(3, 'Done', done=True)
     content = ''.join([THUMB_STR.format(
-        img=os.path.basename(part['path']),
-        rating=part.get('rating'),
-        title=part['title']) for part in parts])
+        img=part['entry'].name,
+        rating=part['parts'].get('rating'),
+        title=part['parts']['title']) for part in parts])
     log(3, 'Generating the index page for {} {}'.format(by_type, by))
     if COMMIT:
         with open(os.path.join(by_dir, by, 'index.html'), 'w') as f:
@@ -141,6 +151,7 @@ def create_by_dir(by_dir, by_type, by, parts):
                 title='{}: {}'.format(by_type.capitalize(), by),
                 content=content))
     log(2, 'Done', done=True)
+
 
 def create_by(link_type, parts):
     log(1, 'Wiping previous state')
@@ -152,6 +163,7 @@ def create_by(link_type, parts):
     create_by_index(link_dir, link_type, parts)
     for k, v in parts.items():
         create_by_dir(link_dir, link_type, k, v)
+
 
 def main(include_date=False, include_rating=True, include_song=False):
     '''Build a static site for commissions.'''
@@ -169,17 +181,10 @@ def main(include_date=False, include_rating=True, include_song=False):
     ratings = defaultdict(list)
 
     for path in files:
-        match = FILENAME_RE.match(path)
-        if match and match.group('extension').lower() in VALID_EXTENSIONS:
-            parts = match.groupdict()
-            parts['path'] = path
-            parts['characters'] = parts['characters'].split('-')
-            if 'rating' not in parts:
-                parts['rating'] = 'G'
-            artists[parts['artist']].append(parts)
-            for character in parts['characters']:
-                characters[character].append(parts)
-            ratings[parts['rating']].append(parts)
+        artists[path['parts']['artist']].append(path)
+        for character in path['parts']['characters']:
+            characters[character].append(path)
+        ratings[path['parts']['rating']].append(path)
 
     # Create the various parts.
     create_by('artist', artists)
@@ -189,25 +194,22 @@ def main(include_date=False, include_rating=True, include_song=False):
 
     # Create the index page with the most recent additions.
     log(1, 'Generating home page...')
-    recent = []
-    with os.scandir(CWD) as it:
-        for entry in it:
-            if entry.is_file() and FILENAME_RE.match(entry.path):
-                recent.append(entry)
-    recent.sort(key=lambda x: x.stat().st_mtime, reverse=True)
     content = '''
     <p><strong>
         <a href="by-artist">By artist</a> |
         <a href="by-character">By character</a> |
-        <a href="by-rating">By rating</a> (<a href="by-rating/G">G</a> - <a href="by-rating/R">R</a> - <a href="by-rating/X">X</a>) |
+        <a href="by-rating">By rating</a> (
+            <a href="by-rating/G">G</a> -
+            <a href="by-rating/R">R</a> -
+            <a href="by-rating/X">X</a>) |
         {}
         <a href="all.html">All images</a>
     </strong></p>'''.format(
             '<a href="by-song">By song</a> |' if include_song else '') + \
         ''.join([THUMB_STR.format(
-            img=path.group(1),
-            rating=path.group('rating'),
-            title=path.group('title')) for path in map(lambda x: FILENAME_RE.match(x.path), recent[:10])])
+            img=path['entry'].name,
+            rating=path['parts']['rating'],
+            title=path['parts']['title']) for path in files[:10]])
     if COMMIT:
         with open(os.path.join(CWD, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
@@ -222,10 +224,12 @@ def main(include_date=False, include_rating=True, include_song=False):
             duration.microseconds),
         done=True)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Build a static site of commissioned art.',
-        epilog='See https://github.com/makyo/commission-organizer for more details')
+        epilog='See https://github.com/makyo/commission-organizer '
+               'for more details')
     parser.add_argument('--no-rating',
                         dest='include_rating',
                         action='store_false',
