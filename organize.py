@@ -7,6 +7,7 @@ from string import Template
 from datetime import datetime
 
 CWD = os.getcwd()
+start = datetime.now()
 
 # Regular expression for matching filenames
 FILENAME_RE = re.compile(
@@ -118,7 +119,8 @@ def create_by_index(link_dir, link_type, parts):
         with open(os.path.join(link_dir, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
                 title=link_type.capitalize(),
-                content=content))
+                content=content,
+                date=start.strftime('%Y-%m-%d')))
 
 
 def create_by_dir(by_dir, by_type, by, parts):
@@ -149,7 +151,8 @@ def create_by_dir(by_dir, by_type, by, parts):
         with open(os.path.join(by_dir, by, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
                 title='{}: {}'.format(by_type.capitalize(), by),
-                content=content))
+                content=content,
+                date=start.strftime('%Y-%m-%d')))
     log(2, 'Done', done=True)
 
 
@@ -167,7 +170,6 @@ def create_by(link_type, parts):
 
 def main(include_date=False, include_rating=True, include_song=False):
     '''Build a static site for commissions.'''
-    start = datetime.now()
     log(0, 'Building commissions site...')
 
     # Get the list of files.
@@ -214,7 +216,8 @@ def main(include_date=False, include_rating=True, include_song=False):
         with open(os.path.join(CWD, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
                 title='Commissions',
-                content=content))
+                content=content,
+                date=start.strftime('%Y-%m-%d')))
 
     duration = datetime.now() - start
     log(0,
