@@ -117,6 +117,11 @@
             const modal = document.querySelector('.modal');
             const img = document.querySelector('.img');
             const meta = document.querySelector('.meta');
+            const scroll = {
+                top: window.scrollY,
+                left: window.scrollX,
+                behavior: 'auto'
+            };
             let mustLoadHash = window.location.hash !== '';
 
             function loadHash() {
@@ -126,6 +131,8 @@
                 }
                 hash = window.location.hash.replace('#', '');
                 if (hash !== '') {
+                    scroll.top = window.scrollY;
+                    scroll.left = window.scrollX;
                     document.querySelectorAll('.G, .R, .X').forEach(thumb => {
                         if (thumb.attributes.href.textContent === hash) {
                             thumb.click();
@@ -133,6 +140,7 @@
                     });
                 } else {
                     hideModal();
+                    window.scrollTo(scroll);
                 }
             }
             function hideModal() {
