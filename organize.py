@@ -6,6 +6,8 @@ from shutil import rmtree
 from string import Template
 from datetime import datetime
 
+from PIL import Image
+
 CWD = os.getcwd()
 start = datetime.now()
 
@@ -34,7 +36,7 @@ VALID_EXTENSIONS = [
 # Template strings for various parts of the indices
 THUMB_STR = '''
 <a href="{img}" class="{rating}">
-    <img src="{img}" title="{title}" alt="{title}" />
+    <img src="{thumb}" title="{title}" alt="{title}" />
 </a>'''
 TABLE_STR = '''
 <table>
@@ -55,6 +57,7 @@ TABLE_ROW_STR = '''
 </tr>'''
 
 COMMIT = True
+REGEN_THUMBS = False
 
 VERBOSITY = 0
 MAX_VERBOSITY = 4
@@ -105,6 +108,22 @@ def get_file_list(include_date=False, include_rating=True):
     return result
 
 
+def create_thumb(path):
+    '''Create a thumbnail version of the image.'''
+    log(3, 'Generating thumbnail for {}'.format(path['entry'].name))
+    if COMMIT and not os.path.exists('thumbs'):
+        log(4, 'Ensuring thumbs directory')
+        os.makedirs('thumbs', exist_ok=True)
+    thumb_file = os.path.join('thumbs', path['entry'].name)
+    if os.path.exists(thumb_file) and not REGEN_THUMBS:
+        log(3, 'Thumbnail already exists, not regenerating')
+        return
+    img = Image.open(path['entry'].name).copy()
+    img.thumbnail((200, 200))
+    if COMMIT:
+        img.save(os.path.join('thumbs', path['entry'].name))
+
+
 def create_by_index(link_dir, link_type, parts):
     '''Create the base index file for a type (artist, character, etc).'''
     log(2, 'Generating index page for {}s'.format(link_type))
@@ -144,6 +163,7 @@ def create_by_dir(by_dir, by_type, by, parts):
     log(3, 'Done', done=True)
     content = ''.join([THUMB_STR.format(
         img=part['entry'].name,
+        thumb=os.path.join('..', '..', 'thumbs', part['entry'].name),
         rating=part['parts'].get('rating'),
         title=part['parts']['title']) for part in parts])
     log(3, 'Generating the index page for {} {}'.format(by_type, by))
@@ -160,7 +180,8 @@ def create_by(link_type, parts):
     log(1, 'Wiping previous state')
     link_dir = os.path.join(CWD, 'by-{}'.format(link_type))
     if COMMIT:
-        rmtree(link_dir)
+        if os.path.exists(link_dir):
+            rmtree(link_dir)
         os.mkdir(link_dir)
     log(1, 'Generating {} pages...'.format(link_type))
     create_by_index(link_dir, link_type, parts)
@@ -188,6 +209,9 @@ def main(include_date=False, include_rating=True, include_song=False):
             characters[character].append(path)
         ratings[path['parts']['rating']].append(path)
 
+        # Additionally, generate thumbnails
+        create_thumb(path)
+
     # Create the various parts.
     create_by('artist', artists)
     create_by('character', characters)
@@ -196,7 +220,7 @@ def main(include_date=False, include_rating=True, include_song=False):
 
     # Create the index page with the most recent additions.
     log(1, 'Generating home page...')
-    content = '''
+    home_content = '''
     <p><strong>
         <a href="by-artist">By artist</a> |
         <a href="by-character">By character</a> |
@@ -210,13 +234,26 @@ def main(include_date=False, include_rating=True, include_song=False):
             '<a href="by-song">By song</a> |' if include_song else '') + \
         ''.join([THUMB_STR.format(
             img=path['entry'].name,
+            thumb=os.path.join('thumbs', path['entry'].name),
             rating=path['parts']['rating'],
             title=path['parts']['title']) for path in files[:10]])
+
+    # Create the all page with every image.
+    all_content = ''.join([THUMB_STR.format(
+        img=path['entry'].name,
+        thumb=os.path.join('thumbs', path['entry'].name),
+        rating=path['parts']['rating'],
+        title=path['parts']['title']) for path in files])
     if COMMIT:
         with open(os.path.join(CWD, 'index.html'), 'w') as f:
             f.write(TEMPLATE.substitute(
                 title='Commissions',
-                content=content,
+                content=home_content,
+                date=start.strftime('%Y-%m-%d')))
+        with open(os.path.join(CWD, 'all.html'), 'w') as f:
+            f.write(TEMPLATE.substitute(
+                title='All Commissions',
+                content=all_content,
                 date=start.strftime('%Y-%m-%d')))
 
     duration = datetime.now() - start
@@ -259,8 +296,13 @@ if __name__ == '__main__':
                         action='store_true',
                         help="Don't actually touch any files, just say what "
                         "will happen (verbosity automatically set to max)")
+    parser.add_argument('--regen-thumbs',
+                        dest='regen_thumbs',
+                        action='store_true',
+                        help='Regenerate thumbnails')
     args = parser.parse_args()
     COMMIT = not args.dry_run
+    REGEN_THUMBS = args.regen_thumbs
     VERBOSITY = MAX_VERBOSITY if args.dry_run else args.verbose
     main(
         include_date=args.include_date,

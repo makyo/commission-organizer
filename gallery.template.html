@@ -173,13 +173,14 @@
                 thumb.addEventListener('click', evt => {
                     const imgName = thumb.attributes.href.textContent;
                     const parts = imgName.split('.')[0].split('--');
+                    const title = parts[1].replace(/-/g, ' ');
                     const characters = parts[2].split('-').map(c => `<a href="$${root}by-character/$${c}">$${c}</a>`).join(', ');
                     evt.preventDefault();
                     modal.classList.add('show');
                     mustLoadHash = true;
                     window.location.hash = imgName;
-                    img.innerHTML = `<a href="$${thumb.attributes.href.textContent}" target="_blank">$${thumb.innerHTML}</a>`;
-                    meta.innerHTML = `<h2>$${parts[1].replace(/-/g, ' ')}</h2>
+                    img.innerHTML = `<a href="$${imgName}" target="_blank"><img src="$${imgName}" title="$${title}" alt="$${title}" /></a>`;
+                    meta.innerHTML = `<h2>$${title}</h2>
                         <table>
                             <thead>
                                 <tr>
