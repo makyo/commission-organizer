@@ -4,7 +4,7 @@ A ~~bash~~ Python script for organizing commissioned art via naming convention.
 
 ```
 usage: organize.py [-h] [--no-rating] [--date] [--include-song] [-v]
-                   [--dry-run]
+                   [--dry-run] [--regen-thumbs]
 
 Build a static site of commissioned art.
 
@@ -17,6 +17,7 @@ optional arguments:
   -v              Run in verbose mode (-vv for more info, up to -vvvv)
   --dry-run       Don't actually touch any files, just say what will happen
                   (verbosity automatically set to max)
+  --regen-thumbs  Regenerate thumbnails
 
 See https://github.com/makyo/commission-organizer for more details
 ```
