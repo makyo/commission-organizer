@@ -69,6 +69,8 @@ VERBOSITY_COLORS = [
     '\x1b[34m'
 ]
 
+ORDER_FILE = '.file-order-lock'
+
 # Open and compile the base gallery template.
 with open(os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
@@ -88,6 +90,15 @@ def get_file_list(include_date=False, include_rating=True):
     '''Get a list of files matching the naming convention.'''
     log(1, 'Getting list of commissions...')
     result = []
+    order = {}
+    try:
+        with open(ORDER_FILE) as f:
+            log(2, 'Reading file order lock file')
+            for line in f:
+                name, ctime = line.split()
+                order[name] = float(ctime)
+    except:
+        pass
     with os.scandir(CWD) as it:
         for entry in it:
             if entry.is_file():
@@ -103,7 +114,13 @@ def get_file_list(include_date=False, include_rating=True):
                     if 'rating' not in f['parts']:
                         f['parts']['rating'] = 'G'
                     result.append(f)
-    result.sort(key=lambda x: x['entry'].stat().st_mtime, reverse=True)
+                    if entry.name not in order:
+                        order[entry.name] = entry.stat().st_mtime
+    with open(ORDER_FILE, 'w') as f:
+        log(2, 'Writing file order lock file')
+        for k, v in order.items():
+            f.write(f'{k} {v}\n')
+    result.sort(key=lambda x: order[x['entry'].name], reverse=True)
     log(1, 'Found {} matching files'.format(len(result)), done=True)
     return result
 
